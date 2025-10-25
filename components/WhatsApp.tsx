@@ -117,7 +117,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, s
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [selectedChat?.messages]);
+  }, [selectedChat?.messages, isLoading]);
   
   useEffect(() => {
       if (!selectedChatId && sortedChats.length > 0) {
@@ -175,7 +175,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, s
         : chat
     ));
     setUserInput('');
-    setIsLoading(true);
+    setIsLoading(isAiActive); // Only show loader if AI is active and will respond
 
     try {
       const response = await fetch(`${API_URL}/chats/${selectedChatId}/message`, {
@@ -326,13 +326,24 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, s
               : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
             }`}>
               <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+               {msg.timestamp && (
+                 <p className={`text-xs mt-2 text-right ${msg.role === ChatRole.USER ? 'text-green-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                 </p>
+               )}
             </div>
           </div>
         ))}
         {isLoading && (
            <div className="flex items-end gap-2 justify-start">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">AI</div>
-              <div className="p-3 rounded-lg bg-white dark:bg-gray-700"><LoaderIcon className="h-5 w-5 text-gray-500" /></div>
+              <div className="p-3 rounded-lg bg-white dark:bg-gray-700 shadow-sm">
+                <div className="flex items-center justify-center gap-1">
+                    <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"></span>
+                </div>
+              </div>
           </div>
         )}
       </div>
