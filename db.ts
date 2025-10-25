@@ -1,6 +1,7 @@
+
 import fs from 'fs/promises';
-import { initialChats, initialProducts, initialSettings } from './data';
-import { WhatsAppChat, Product, Settings } from './types';
+import { initialChats, initialProducts, initialSettings, initialReports } from './data';
+import { WhatsAppChat, Product, Settings, Report } from './types';
 
 // This setup assumes the Render environment allows writing to the file system.
 // We will create a 'db' directory to store our JSON data files.
@@ -8,11 +9,13 @@ const DB_DIR = './db';
 const CHATS_PATH = `${DB_DIR}/chats.json`;
 const PRODUCTS_PATH = `${DB_DIR}/products.json`;
 const SETTINGS_PATH = `${DB_DIR}/settings.json`;
+const REPORTS_PATH = `${DB_DIR}/reports.json`;
 
 // In-memory cache of the data, populated from files on startup.
 let chats: WhatsAppChat[] = [];
 let products: Product[] = [];
 let settings: Settings | null = null;
+let reports: Report[] = [];
 
 // Helper to load data from a file, creating it with a default value if it doesn't exist.
 async function loadDataFromFile<T>(path: string, defaultValue: T): Promise<T> {
@@ -37,6 +40,7 @@ export async function initializeDatabase() {
         products = await loadDataFromFile(PRODUCTS_PATH, initialProducts);
         settings = await loadDataFromFile(SETTINGS_PATH, initialSettings);
         chats = await loadDataFromFile(CHATS_PATH, initialChats);
+        reports = await loadDataFromFile(REPORTS_PATH, initialReports);
         console.log('Database initialized successfully from files.');
     } catch (error) {
         console.error('Failed to initialize database from file system:', error);
@@ -44,6 +48,7 @@ export async function initializeDatabase() {
         products = initialProducts;
         settings = initialSettings;
         chats = initialChats;
+        reports = initialReports;
         console.log('Using in-memory default data as fallback.');
     }
 }
@@ -52,8 +57,10 @@ export async function initializeDatabase() {
 export const getChats = (): WhatsAppChat[] => chats;
 export const getProducts = (): Product[] => products;
 export const getSettings = (): Settings => settings!;
+export const getReports = (): Report[] => reports;
 
 // Functions to save the current state of in-memory data back to the files
 export const saveChats = () => fs.writeFile(CHATS_PATH, JSON.stringify(chats, null, 2));
 export const saveProducts = () => fs.writeFile(PRODUCTS_PATH, JSON.stringify(products, null, 2));
 export const saveSettings = () => fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+export const saveReports = () => fs.writeFile(REPORTS_PATH, JSON.stringify(reports, null, 2));
