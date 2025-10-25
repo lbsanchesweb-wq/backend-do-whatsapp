@@ -13,9 +13,11 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 const model = 'gemini-2.5-flash';
 
 function createSystemInstruction(products: Product[], settings: Settings): string {
-    const productCatalog = products.map(p =>
-        `- **${p.name}**: ${p.description} (Tipo: ${p.productType}, Tamanho Padrão: ${p.size}, Qtd. Mínima: ${p.quantity} un., Prazo: ${p.productionTime})`
-    ).join('\n');
+    const productCatalog = products
+        .filter(p => p.isActive) // Only include active products in the AI's knowledge base
+        .map(p =>
+            `- **${p.name}**: ${p.description} (Tipo: ${p.productType}, Tamanho Padrão: ${p.size}, Qtd. Mínima: ${p.quantity} un., Prazo: ${p.productionTime})`
+        ).join('\n');
 
     return `
 Você é Ara, um assistente de vendas e atendimento da 'Araras Impressão', uma gráfica especializada em rótulos e adesivos. Sua função é guiar os clientes por um funil de vendas de forma autônoma via WhatsApp.
@@ -26,8 +28,8 @@ Seja sempre cordial, profissional e proativo. Conduza a conversa, fazendo uma pe
 
 ---
 
-**Catálogo de Produtos:**
-${productCatalog || 'Nenhum produto cadastrado ainda.'}
+**Catálogo de Produtos (Apenas itens ativos):**
+${productCatalog || 'Nenhum produto disponível no momento.'}
 
 **Políticas da Empresa:**
 - **Pagamento:** ${settings.paymentPolicy || 'Não definida.'}
