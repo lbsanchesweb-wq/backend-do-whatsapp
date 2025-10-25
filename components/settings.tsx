@@ -5,9 +5,10 @@ import { LoaderIcon } from './icons';
 interface SettingsProps {
   settings: Settings;
   onSave: (newSettings: Settings) => Promise<boolean>;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const SettingsComponent: React.FC<SettingsProps> = ({ settings: initialSettings, onSave }) => {
+export const SettingsComponent: React.FC<SettingsProps> = ({ settings: initialSettings, onSave, showToast }) => {
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -20,8 +21,9 @@ export const SettingsComponent: React.FC<SettingsProps> = ({ settings: initialSe
     setIsSaving(true);
     const success = await onSave(settings);
     if (success) {
-        alert('Configurações salvas com sucesso!');
+        showToast('Configurações salvas com sucesso!', 'success');
     }
+    // Error toast is handled by the App component
     setIsSaving(false);
   };
   
