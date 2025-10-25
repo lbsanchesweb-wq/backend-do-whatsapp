@@ -13,9 +13,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: Removed the path argument '/' from app.use for global middleware, which is more idiomatic and resolves type overload issues.
+// FIX: To apply middleware globally, the path argument must be omitted from app.use().
+// This resolves a TypeScript error where the middleware was being incorrectly typed as a path parameter.
 app.use(express.json({ limit: '10mb' }));
-// FIX: Removed the path argument '/' from app.use for global middleware, which is more idiomatic and resolves type overload issues.
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const server = http.createServer(app);
