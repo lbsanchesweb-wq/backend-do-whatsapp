@@ -7,9 +7,9 @@ export const initialChats: WhatsAppChat[] = [];
 export const initialReports: Report[] = [];
 
 export const initialProducts: Product[] = [
-    {id: '1', name: 'Rótulo Adesivo Vinil', description: 'Rótulo de alta durabilidade, resistente à água e rasgos. Ideal para produtos que entram em contato com umidade.', image: 'https://picsum.photos/seed/label1/300/200', productType: 'Rótulo', size: '10x15cm', quantity: 100, productionTime: '5 dias úteis'},
-    {id: '2', name: 'Rótulo Adesivo BOPP', description: 'Filme plástico com ótima aparência e resistência. Perfeito para embalagens de alimentos e bebidas.', image: 'https://picsum.photos/seed/label2/300/200', productType: 'Rótulo', size: '5x5cm', quantity: 500, productionTime: '5 dias úteis'},
-    {id: '3', name: 'Etiqueta de Papel Couchê', description: 'Excelente qualidade de impressão e custo-benefício. Usado em produtos secos e embalagens em geral.', image: 'https://picsum.photos/seed/label3/300/200', productType: 'Etiqueta', size: 'Variado', quantity: 1000, productionTime: '3 dias úteis'},
+    {id: '1', name: 'Rótulo Adesivo Vinil', description: 'Rótulo de alta durabilidade, resistente à água e rasgos. Ideal para produtos que entram em contato com umidade.', image: 'https://picsum.photos/seed/label1/300/200', productType: 'Rótulo', size: '10x15cm', quantity: 100, productionTime: '5 dias úteis', isActive: true},
+    {id: '2', name: 'Rótulo Adesivo BOPP', description: 'Filme plástico com ótima aparência e resistência. Perfeito para embalagens de alimentos e bebidas.', image: 'https://picsum.photos/seed/label2/300/200', productType: 'Rótulo', size: '5x5cm', quantity: 500, productionTime: '5 dias úteis', isActive: true},
+    {id: '3', name: 'Etiqueta de Papel Couchê', description: 'Excelente qualidade de impressão e custo-benefício. Usado em produtos secos e embalagens em geral.', image: 'https://picsum.photos/seed/label3/300/200', productType: 'Etiqueta', size: 'Variado', quantity: 1000, productionTime: '3 dias úteis', isActive: true},
 ];
 
 export const initialSettings: Settings = {
