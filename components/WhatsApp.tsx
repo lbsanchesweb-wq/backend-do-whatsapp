@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { WhatsAppChat, ChatMessage, Product, Settings, ChatRole, Report, Contact } from '../types';
-import { LoaderIcon, SendIcon, UserIcon, MessageSquareIcon, FileTextIcon, PlusIcon } from './icons';
+import { LoaderIcon, SendIcon, UserIcon, MessageSquareIcon, FileTextIcon, PlusIcon, SearchIcon } from './icons';
 import { ToggleSwitch } from './ToggleSwitch';
 import { Modal } from './Modal';
 
@@ -8,6 +8,7 @@ interface WhatsAppProps {
   chats: WhatsAppChat[];
   setChats: React.Dispatch<React.SetStateAction<WhatsAppChat[]>>;
   setReports: React.Dispatch<React.SetStateAction<Report[]>>;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
 const API_URL = 'https://backend-do-whatsapp.onrender.com';
@@ -62,17 +63,26 @@ const NewChatForm: React.FC<{
 };
 
 
-export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports }) => {
+export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports, showToast }) => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const sortedChats = useMemo(() => {
     return [...chats].sort((a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime());
   }, [chats]);
+
+  const filteredChats = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return sortedChats;
+    return sortedChats.filter(chat => 
+      chat.contact.name.toLowerCase().includes(query)
+    );
+  }, [sortedChats, searchQuery]);
   
   const selectedChat = useMemo(() => {
     return chats.find(c => c.id === selectedChatId);
@@ -118,10 +128,10 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
   }, [selectedChat?.messages, isLoading]);
   
   useEffect(() => {
-      if (!selectedChatId && sortedChats.length > 0) {
-          setSelectedChatId(sortedChats[0].id);
+      if (!selectedChatId && filteredChats.length > 0) {
+          setSelectedChatId(filteredChats[0].id);
       }
-  }, [sortedChats, selectedChatId]);
+  }, [filteredChats, selectedChatId]);
 
   const handleToggleAI = async (chatId: string) => {
     const originalChats = chats;
@@ -147,7 +157,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
     } catch (error) {
         console.error("Error toggling AI status:", error);
         setChats(originalChats); // Revert on error
-        alert('Falha ao atualizar o status da IA. Tente novamente.');
+        showToast('Falha ao atualizar o status da IA. Tente novamente.', 'error');
     }
   };
 
@@ -190,7 +200,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
     } catch (error) {
         console.error("Error sending message:", error);
         setChats(originalChats); // Revert on error
-        alert('Erro de rede. A mensagem não foi enviada.');
+        showToast('Erro de rede. A mensagem não foi enviada.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -213,10 +223,11 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
         // We just need to select the new chat once it arrives.
         const newChat: WhatsAppChat = await response.json();
         setSelectedChatId(newChat.id);
+        showToast('Nova conversa iniciada com sucesso!', 'success');
 
     } catch (error) {
         console.error("Error creating new chat:", error);
-        alert('Não foi possível criar a nova conversa. Verifique o backend e tente novamente.');
+        showToast('Não foi possível criar a nova conversa. Tente novamente.', 'error');
     } finally {
         setIsLoading(false);
     }
@@ -235,6 +246,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
       
       // Update the global reports state in App.tsx
       setReports(prevReports => [newReport, ...prevReports]);
+      showToast('Relatório gerado com sucesso!', 'success');
       
       // Display the report summary in a new window
       const reportHtml = `
@@ -260,11 +272,11 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
         newWindow.document.write(reportHtml);
         newWindow.document.close();
       } else {
-        alert('Por favor, habilite pop-ups para ver o relatório.');
+        showToast('Por favor, habilite pop-ups para ver o relatório.', 'error');
       }
     } catch (error) {
       console.error("Failed to generate report:", error);
-      alert("Não foi possível gerar o relatório. Tente novamente.");
+      showToast("Não foi possível gerar o relatório.", 'error');
     } finally {
       setIsGeneratingReport(false);
     }
@@ -364,18 +376,29 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
       <div className="h-full flex">
         {/* Contact List */}
         <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Conversas</h2>
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center gap-2">
+            <div className="relative flex-grow">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <SearchIcon className="h-5 w-5 text-gray-400" />
+                </span>
+                <input
+                    type="text"
+                    placeholder="Buscar conversa..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 pl-10 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm text-gray-900 dark:text-gray-200"
+                />
+            </div>
             <button 
               onClick={() => setIsNewChatModalOpen(true)}
-              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-full transition-colors flex-shrink-0"
               title="Iniciar Nova Conversa"
             >
               <PlusIcon className="h-6 w-6" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {sortedChats.map(chat => (
+            {filteredChats.length > 0 ? filteredChats.map(chat => (
               <div
                 key={chat.id}
                 onClick={() => setSelectedChatId(chat.id)}
@@ -398,7 +421,14 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports 
                   </p>
                 </div>
               </div>
-            ))}
+            )) : (
+                <div className="text-center py-10 px-4">
+                  <p className="text-gray-500 dark:text-gray-400">Nenhuma conversa encontrada.</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    {searchQuery ? `Tente buscar por outro nome.` : `Clique em '+' para iniciar uma nova conversa.`}
+                  </p>
+              </div>
+            )}
           </div>
         </div>
 
