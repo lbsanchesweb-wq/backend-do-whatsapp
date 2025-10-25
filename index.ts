@@ -1,20 +1,22 @@
+
+
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { WhatsAppChat, ChatMessage, ChatRole, Product } from './types';
-import { initializeDatabase, getChats, getProducts, getSettings, saveChats, saveProducts, saveSettings } from './db';
-import { generateChatResponse, generateOrderSummary } from './services/chatService';
+import { WhatsAppChat, ChatMessage, ChatRole, Product, Report } from './types';
+import { initializeDatabase, getChats, getProducts, getSettings, getReports, saveChats, saveProducts, saveSettings, saveReports } from './db';
+import { generateChatResponse, generateOrderSummary, generateAnalyticsInsights } from './services/chatService';
 import { handleIncomingMessage } from './services/twilioService';
 
 const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// Fix: Explicitly provide a path to the middleware to resolve overload ambiguity.
-app.use('/', express.json({ limit: '10mb' }));
-// Fix: Explicitly provide a path to the middleware to resolve overload ambiguity.
-app.use('/', express.urlencoded({ extended: true, limit: '10mb' }));
+// FIX: Removed the path argument '/' from app.use for global middleware, which is more idiomatic and resolves type overload issues.
+app.use(express.json({ limit: '10mb' }));
+// FIX: Removed the path argument '/' from app.use for global middleware, which is more idiomatic and resolves type overload issues.
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
@@ -39,6 +41,32 @@ wss.on('connection', (ws) => {
 });
 
 // ** API Endpoints **
+
+// -- Analytics API --
+app.get('/analytics', async (req, res) => {
+    try {
+        const chats = getChats();
+        const reports = getReports();
+        
+        const aiInsights = await generateAnalyticsInsights(chats);
+
+        const recentActivity = chats
+            .sort((a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime())
+            .slice(0, 5);
+
+        res.json({
+            totalChats: chats.length,
+            aiActiveChats: chats.filter(c => c.isAiActive).length,
+            totalReports: reports.length,
+            aiInsights,
+            recentActivity
+        });
+    } catch (error) {
+        console.error("Error fetching analytics:", error);
+        res.status(500).send('Error fetching analytics data');
+    }
+});
+
 
 // -- Products API --
 app.get('/products', (req, res) => {
@@ -90,6 +118,24 @@ app.put('/settings', async (req, res) => {
     Object.assign(settings, newSettings);
     await saveSettings();
     res.json(settings);
+});
+
+// -- Reports API --
+app.get('/reports', (req, res) => {
+    res.json(getReports());
+});
+
+app.delete('/reports/:id', async (req, res) => {
+    const { id } = req.params;
+    const reports = getReports();
+    const reportIndex = reports.findIndex(r => r.id === id);
+    if (reportIndex > -1) {
+        reports.splice(reportIndex, 1);
+        await saveReports();
+        res.status(204).send();
+    } else {
+        res.status(404).send('Report not found');
+    }
 });
 
 // -- Chats API --
@@ -162,12 +208,23 @@ app.post('/chats/:id/toggle-ai', async (req, res) => {
     }
 });
 
+// This endpoint now creates and SAVES the report
 app.post('/chats/:id/report', async (req, res) => {
     const { id } = req.params;
     const chat = getChats().find(c => c.id === id);
     if (chat) {
         const summary = await generateOrderSummary(chat.messages);
-        res.json({ summary });
+        const reports = getReports();
+        const newReport: Report = {
+            id: `rep_${new Date().getTime()}`,
+            chatId: chat.id,
+            contactName: chat.contact.name,
+            generatedAt: new Date().toISOString(),
+            summary: summary,
+        };
+        reports.unshift(newReport);
+        await saveReports();
+        res.status(201).json(newReport);
     } else {
         res.status(404).send('Chat not found');
     }
