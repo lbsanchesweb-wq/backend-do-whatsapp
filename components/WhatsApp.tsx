@@ -7,8 +7,6 @@ import { Modal } from './Modal';
 interface WhatsAppProps {
   chats: WhatsAppChat[];
   setChats: React.Dispatch<React.SetStateAction<WhatsAppChat[]>>;
-  products: Product[];
-  settings: Settings;
   setReports: React.Dispatch<React.SetStateAction<Report[]>>;
 }
 
@@ -64,7 +62,7 @@ const NewChatForm: React.FC<{
 };
 
 
-export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, settings, setReports }) => {
+export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, setReports }) => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -229,20 +227,16 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, s
 
     setIsGeneratingReport(true);
     try {
+      // The backend now generates AND saves the report.
       const response = await fetch(`${API_URL}/chats/${selectedChatId}/report`, { method: 'POST' });
-      if (!response.ok) throw new Error('Falha ao buscar resumo do relatório.');
+      if (!response.ok) throw new Error('Falha ao gerar o relatório no servidor.');
       
-      const { summary } = await response.json();
+      const newReport: Report = await response.json();
       
-      const newReport: Report = {
-        id: new Date().toISOString(),
-        chatId: selectedChat.id,
-        contactName: selectedChat.contact.name,
-        generatedAt: new Date().toISOString(),
-        summary: summary,
-      };
+      // Update the global reports state in App.tsx
       setReports(prevReports => [newReport, ...prevReports]);
       
+      // Display the report summary in a new window
       const reportHtml = `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -255,7 +249,7 @@ export const WhatsApp: React.FC<WhatsAppProps> = ({ chats, setChats, products, s
         <body class="bg-gray-100 font-sans p-8">
           <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl">
             <h1 class="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Relatório de Atendimento</h1>
-            <pre class="whitespace-pre-wrap text-gray-700 text-sm font-sans leading-relaxed">${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+            <pre class="whitespace-pre-wrap text-gray-700 text-sm font-sans leading-relaxed">${newReport.summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
           </div>
         </body>
         </html>
