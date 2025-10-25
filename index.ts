@@ -1,10 +1,8 @@
-
-// FIX: Import `json` and `urlencoded` from express to resolve type errors.
-import express, { json, urlencoded } from 'express';
+import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { WhatsAppChat, ChatMessage, ChatRole } from './types';
+import { WhatsAppChat, ChatMessage, ChatRole, Product } from './types';
 import { chats, products, settings } from './data';
 import { generateChatResponse, generateOrderSummary } from './services/chatService';
 import { handleIncomingMessage } from './services/twilioService';
@@ -13,9 +11,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: Use imported `json` and `urlencoded` functions directly.
-app.use(json());
-app.use(urlencoded({ extended: true }));
+// FIX: Use express.json() and express.urlencoded() to correctly parse request bodies.
+app.use(express.json({ limit: '10mb' })); // Increase limit for product images
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ** WebSocket Server Setup **
 const server = http.createServer(app);
@@ -53,6 +51,54 @@ wss.on('connection', (ws) => {
 
 // ** API Endpoints **
 
+// -- Products API --
+app.get('/products', (req, res) => {
+    res.json(products);
+});
+
+app.post('/products', (req, res) => {
+    const newProduct: Product = { ...req.body, id: `prod_${new Date().getTime()}` };
+    products.push(newProduct);
+    res.status(201).json(newProduct);
+});
+
+app.put('/products/:id', (req, res) => {
+    const { id } = req.params;
+    const productIndex = products.findIndex(p => p.id === id);
+    if (productIndex > -1) {
+        products[productIndex] = { ...products[productIndex], ...req.body };
+        res.json(products[productIndex]);
+    } else {
+        res.status(404).send('Product not found');
+    }
+});
+
+app.delete('/products/:id', (req, res) => {
+    const { id } = req.params;
+    // FIX: Mutate the array instead of reassigning an imported variable.
+    const productIndex = products.findIndex(p => p.id === id);
+    if (productIndex > -1) {
+        products.splice(productIndex, 1);
+        res.status(204).send();
+    } else {
+        res.status(404).send('Product not found');
+    }
+});
+
+// -- Settings API --
+app.get('/settings', (req, res) => {
+    res.json(settings);
+});
+
+app.put('/settings', (req, res) => {
+    const newSettings = req.body;
+    // FIX: Mutate the imported settings object instead of reassigning it.
+    Object.assign(settings, newSettings);
+    res.json(settings);
+});
+
+
+// -- Chats API --
 app.get('/chats', (req, res) => {
   res.json(chats);
 });
