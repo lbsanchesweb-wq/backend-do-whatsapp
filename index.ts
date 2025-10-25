@@ -13,8 +13,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: To apply middleware globally, the path argument must be omitted from app.use().
-// This resolves a TypeScript error where the middleware was being incorrectly typed as a path parameter.
+// FIX: Apply express.json and express.urlencoded middleware globally.
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -75,7 +74,11 @@ app.get('/products', (req, res) => {
 
 app.post('/products', async (req, res) => {
     const products = getProducts();
-    const newProduct: Product = { ...req.body, id: `prod_${new Date().getTime()}` };
+    const newProduct: Product = { 
+        ...req.body, 
+        id: `prod_${new Date().getTime()}`,
+        isActive: true // New products are active by default
+    };
     products.push(newProduct);
     await saveProducts();
     res.status(201).json(newProduct);
@@ -89,6 +92,20 @@ app.put('/products/:id', async (req, res) => {
         products[productIndex] = { ...products[productIndex], ...req.body };
         await saveProducts();
         res.json(products[productIndex]);
+    } else {
+        res.status(404).send('Product not found');
+    }
+});
+
+app.put('/products/:id/toggle-status', async (req, res) => {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    const products = getProducts();
+    const product = products.find(p => p.id === id);
+    if (product) {
+        product.isActive = isActive;
+        await saveProducts();
+        res.json(product);
     } else {
         res.status(404).send('Product not found');
     }
