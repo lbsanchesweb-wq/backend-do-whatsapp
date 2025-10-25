@@ -1,8 +1,10 @@
-import { WhatsAppChat, Product, Settings } from './types';
+
+import { WhatsAppChat, Product, Settings, Report } from './types';
 
 // This file now exports the INITIAL default data.
 // The live data will be managed by db.ts and stored in JSON files.
 export const initialChats: WhatsAppChat[] = [];
+export const initialReports: Report[] = [];
 
 export const initialProducts: Product[] = [
     {id: '1', name: 'Rótulo Adesivo Vinil', description: 'Rótulo de alta durabilidade, resistente à água e rasgos. Ideal para produtos que entram em contato com umidade.', image: 'https://picsum.photos/seed/label1/300/200', productType: 'Rótulo', size: '10x15cm', quantity: 100, productionTime: '5 dias úteis'},
