@@ -8,6 +8,7 @@ import { WhatsApp } from './components/WhatsApp';
 import { Reports } from './components/Reports';
 import { Page, Product, Settings, WhatsAppChat, Report } from './types';
 import { LoaderIcon } from './components/icons';
+import { Toast } from './components/Toast';
 
 const API_URL = 'https://backend-do-whatsapp.onrender.com';
 
@@ -21,6 +22,14 @@ const App: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000); // Hide after 4 seconds
+  };
 
   // Fetch all initial data from the backend
   useEffect(() => {
@@ -71,9 +80,10 @@ const App: React.FC = () => {
         if (!response.ok) throw new Error('Falha ao adicionar produto.');
         const newProduct = await response.json();
         setProducts(prev => [...prev, newProduct]);
+        showToast('Produto adicionado com sucesso!', 'success');
     } catch (error) {
         console.error("Error adding product:", error);
-        alert('Não foi possível adicionar o produto.');
+        showToast('Não foi possível adicionar o produto.', 'error');
     }
   };
 
@@ -86,9 +96,10 @@ const App: React.FC = () => {
         });
         if (!response.ok) throw new Error('Falha ao atualizar produto.');
         setProducts(products.map(p => (p.id === updatedProduct.id ? updatedProduct : p)));
+        showToast('Produto atualizado com sucesso!', 'success');
     } catch (error) {
         console.error("Error updating product:", error);
-        alert('Não foi possível atualizar o produto.');
+        showToast('Não foi possível atualizar o produto.', 'error');
     }
   };
 
@@ -99,9 +110,10 @@ const App: React.FC = () => {
         });
         if (!response.ok) throw new Error('Falha ao deletar produto.');
         setProducts(products.filter(p => p.id !== id));
+        showToast('Produto deletado com sucesso!', 'success');
     } catch (error) {
         console.error("Error deleting product:", error);
-        alert('Não foi possível deletar o produto.');
+        showToast('Não foi possível deletar o produto.', 'error');
     }
   };
   
@@ -117,7 +129,7 @@ const App: React.FC = () => {
         return true; // Indicate success
     } catch (error) {
         console.error("Error updating settings:", error);
-        alert('Não foi possível salvar as configurações.');
+        showToast('Não foi possível salvar as configurações.', 'error');
         return false; // Indicate failure
     }
   }
@@ -152,11 +164,11 @@ const App: React.FC = () => {
       case 'products':
         return <Products products={products} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} />;
       case 'settings':
-        return <SettingsComponent settings={settings} onSave={updateSettings} />;
+        return <SettingsComponent settings={settings} onSave={updateSettings} showToast={showToast} />;
       case 'whatsapp':
-        return <WhatsApp chats={whatsAppChats} setChats={setWhatsAppChats} setReports={setReports} />;
+        return <WhatsApp chats={whatsAppChats} setChats={setWhatsAppChats} setReports={setReports} showToast={showToast} />;
       case 'reports':
-        return <Reports reports={reports} setReports={setReports} />;
+        return <Reports reports={reports} setReports={setReports} showToast={showToast} />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }
@@ -164,6 +176,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
       <main className="flex-1 flex flex-col ml-64">
         <Header currentPage={currentPage} />
