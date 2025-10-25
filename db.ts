@@ -37,10 +37,28 @@ async function loadDataFromFile<T>(path: string, defaultValue: T): Promise<T> {
 export async function initializeDatabase() {
     try {
         await fs.mkdir(DB_DIR, { recursive: true });
+        
+        // Load data
         products = await loadDataFromFile(PRODUCTS_PATH, initialProducts);
         settings = await loadDataFromFile(SETTINGS_PATH, initialSettings);
         chats = await loadDataFromFile(CHATS_PATH, initialChats);
         reports = await loadDataFromFile(REPORTS_PATH, initialReports);
+
+        // Data migration: ensure all products have an `isActive` field
+        let productsModified = false;
+        products.forEach(p => {
+            if (p.isActive === undefined) {
+                p.isActive = true; // Default to active if property is missing
+                productsModified = true;
+            }
+        });
+
+        // If we modified any product, save the file back
+        if (productsModified) {
+            await saveProducts();
+            console.log('Product data migrated to include `isActive` field.');
+        }
+
         console.log('Database initialized successfully from files.');
     } catch (error) {
         console.error('Failed to initialize database from file system:', error);
