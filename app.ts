@@ -7,19 +7,17 @@ import { SettingsComponent } from './components/Settings';
 import { WhatsApp } from './components/WhatsApp';
 import { Reports } from './components/Reports';
 import { Page, Product, Settings, WhatsAppChat, Report } from './types';
-import { useLocalStorage } from './hooks/useLocalStorage';
 import { LoaderIcon } from './components/icons';
 
 const API_URL = 'https://backend-do-whatsapp.onrender.com';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('whatsapp');
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   
-  // State is now managed here, not in localStorage
   const [products, setProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<Settings>({ paymentPolicy: '', shippingPolicy: '', artBriefingPolicy: '' });
   const [whatsAppChats, setWhatsAppChats] = useState<WhatsAppChat[]>([]);
-  const [reports, setReports] = useLocalStorage<Report[]>('reports', []);
+  const [reports, setReports] = useState<Report[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,23 +26,26 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [productsRes, settingsRes, chatsRes] = await Promise.all([
+        const [productsRes, settingsRes, chatsRes, reportsRes] = await Promise.all([
           fetch(`${API_URL}/products`),
           fetch(`${API_URL}/settings`),
-          fetch(`${API_URL}/chats`)
+          fetch(`${API_URL}/chats`),
+          fetch(`${API_URL}/reports`)
         ]);
 
-        if (!productsRes.ok || !settingsRes.ok || !chatsRes.ok) {
+        if (!productsRes.ok || !settingsRes.ok || !chatsRes.ok || !reportsRes.ok) {
           throw new Error('Falha ao carregar dados essenciais do servidor.');
         }
 
         const productsData = await productsRes.json();
         const settingsData = await settingsRes.json();
         const chatsData = await chatsRes.json();
+        const reportsData = await reportsRes.json();
 
         setProducts(productsData);
         setSettings(settingsData);
         setWhatsAppChats(chatsData);
+        setReports(reportsData);
 
       } catch (err) {
         if (err instanceof Error) {
@@ -147,17 +148,17 @@ const App: React.FC = () => {
     
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard products={products} settings={settings} />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'products':
         return <Products products={products} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} />;
       case 'settings':
         return <SettingsComponent settings={settings} onSave={updateSettings} />;
       case 'whatsapp':
-        return <WhatsApp chats={whatsAppChats} setChats={setWhatsAppChats} products={products} settings={settings} setReports={setReports} />;
+        return <WhatsApp chats={whatsAppChats} setChats={setWhatsAppChats} setReports={setReports} />;
       case 'reports':
         return <Reports reports={reports} setReports={setReports} />;
       default:
-        return <Dashboard products={products} settings={settings} />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
     }
   };
 
