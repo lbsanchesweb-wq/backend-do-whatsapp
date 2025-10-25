@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Report } from '../types';
 import { Modal } from './Modal';
@@ -9,9 +8,10 @@ const API_URL = 'https://backend-do-whatsapp.onrender.com';
 interface ReportsProps {
   reports: Report[];
   setReports: React.Dispatch<React.SetStateAction<Report[]>>;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const Reports: React.FC<ReportsProps> = ({ reports, setReports }) => {
+export const Reports: React.FC<ReportsProps> = ({ reports, setReports, showToast }) => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -25,9 +25,10 @@ export const Reports: React.FC<ReportsProps> = ({ reports, setReports }) => {
           throw new Error('Falha ao excluir o relatório.');
         }
         setReports(prev => prev.filter(r => r.id !== reportId));
+        showToast('Relatório excluído com sucesso!', 'success');
       } catch (error) {
         console.error("Error deleting report:", error);
-        alert("Não foi possível excluir o relatório. Tente novamente.");
+        showToast("Não foi possível excluir o relatório. Tente novamente.", 'error');
       } finally {
         setDeletingId(null);
       }
