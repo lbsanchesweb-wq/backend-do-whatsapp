@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -70,7 +71,7 @@ const App: React.FC = () => {
     fetchInitialData();
   }, []);
 
-  const addProduct = async (product: Omit<Product, 'id'>) => {
+  const addProduct = async (product: Omit<Product, 'id' | 'isActive'>) => {
     try {
         const response = await fetch(`${API_URL}/products`, {
             method: 'POST',
@@ -114,6 +115,27 @@ const App: React.FC = () => {
     } catch (error) {
         console.error("Error deleting product:", error);
         showToast('Não foi possível deletar o produto.', 'error');
+    }
+  };
+
+  const toggleProductStatus = async (id: string, isActive: boolean) => {
+    // Optimistic UI update
+    const originalProducts = [...products];
+    setProducts(prev => prev.map(p => p.id === id ? {...p, isActive} : p));
+
+    try {
+        const response = await fetch(`${API_URL}/products/${id}/toggle-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive }),
+        });
+        if (!response.ok) throw new Error('Falha ao atualizar status do produto.');
+        showToast(`Produto ${isActive ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+    } catch (error) {
+        // Revert on error
+        setProducts(originalProducts);
+        console.error("Error toggling product status:", error);
+        showToast('Não foi possível alterar o status do produto.', 'error');
     }
   };
   
@@ -162,7 +184,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'products':
-        return <Products products={products} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} />;
+        return <Products products={products} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleProductStatus={toggleProductStatus} />;
       case 'settings':
         return <SettingsComponent settings={settings} onSave={updateSettings} showToast={showToast} />;
       case 'whatsapp':
