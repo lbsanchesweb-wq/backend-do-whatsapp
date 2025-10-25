@@ -11,9 +11,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: Explicitly provide a path to the middleware to resolve overload ambiguity.
+// Fix: Explicitly provide a path to the middleware to resolve overload ambiguity.
 app.use('/', express.json({ limit: '10mb' }));
-// FIX: Explicitly provide a path to the middleware to resolve overload ambiguity.
+// Fix: Explicitly provide a path to the middleware to resolve overload ambiguity.
 app.use('/', express.urlencoded({ extended: true, limit: '10mb' }));
 
 const server = http.createServer(app);
